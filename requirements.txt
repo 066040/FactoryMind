@@ -1,0 +1,3 @@
+pika
+ollama
+chromadb

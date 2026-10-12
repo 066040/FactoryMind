@@ -1,0 +1,26 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: mercedes-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: mercedes2026
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  consumer:
+    build: .
+    container_name: factorymind-ai
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+          condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
