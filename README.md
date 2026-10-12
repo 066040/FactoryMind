@@ -1,27 +1,44 @@
-# 🏭 FactoryMind: Edge-to-AI Predictive Maintenance Architecture
+cat << 'EOF' > ~/FactoryMind-Docker/README.md
+# FactoryMind
 
-An end-to-end **Industry 4.0** predictive maintenance pipeline designed for smart factory telemetry. 
+An Industry 4.0 predictive maintenance pipeline that captures machine sensor telemetry, queues critical alerts, and performs automated root-cause analysis using local RAG and LLM inference.
 
-The system captures high-frequency CNC telemetry via an edge-level C++ producer, queues mission-critical alerts through RabbitMQ, retrieves contextual technician troubleshooting procedures using vector search (ChromaDB), and performs automated root-cause failure analysis (RCFA) locally using an on-premise Large Language Model (Ollama).
+## Architecture
 
----
+[ C++ Edge Sensor ] ──(AMQP)──> [ RabbitMQ Broker ] ──> [ Python Consumer ]
+                                                             |
+                                    +------------------------+------------------------+
+                                    v                                                 v
+                            [ ChromaDB (RAG) ]                             [ Local Ollama / LLM ]
+                         (Technician Notes Context)                         (Root Cause Analysis)
 
-## 🏗️ System Architecture
+1. Edge Sensor (C++): Collects telemetry (temperature, vibration, status) and sends critical JSON alarms.
+2. Message Broker (RabbitMQ): Queues messages reliably without data loss.
+3. RAG Vector Search (ChromaDB): Matches incoming alarm telemetry with historical technician repair manuals.
+4. Local Brain (Ollama): Runs fully on-premise to diagnose root causes and recommend immediate mitigation steps.
 
-```text
-[ CNC Machine / Edge ] 
-        │
-   (C++ AMQP Producer)
-        │  Sends Telemetry (JSON: Temp, Vibration, Status)
-        ▼
-[ RabbitMQ Message Broker (Docker) ]
-        │
-        │  Persistent Queue Stream
-        ▼
-[ AI Brain Consumer (Docker / Python) ]
-   ├── Step 1: Ingests alert payload
-   ├── Step 2: Vector Search in ChromaDB (Historical Technician Notes / RAG)
-   └── Step 3: Local LLM Inference via Ollama API
-        │
-        ▼
-[ Root Cause & Corrective Action Report ]
+## Tech Stack
+
+- C++ (AMQP Publisher)
+- Python 3.11 (Consumer & RAG)
+- RabbitMQ (Docker)
+- ChromaDB (Local Vector DB)
+- Ollama (Local LLM Inference)
+- Docker Compose
+
+## Quick Start
+
+1. Ensure Ollama is running on host with model:
+   ollama pull qwen2.5:3b
+
+2. Start broker and AI consumer:
+   docker-compose up --build
+
+3. In another terminal, trigger the edge sensor:
+   ~/producer
+
+## Example Output
+
+[SENSOR] Alarm: CNC-01 - CRITICAL (Temperature: 92.0°C)
+[RETRIEVED NOTES]: CNC-01: When temperature reaches 90°C, replace thermal relief valve.
+[ROOT CAUSE & ACTION PLAN]: Operating temperature exceeded 90°C threshold. Verify coolant pump performance and replace thermal relief valve immediately.
