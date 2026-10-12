@@ -1,4 +1,4 @@
-cat << 'EOF' > ~/FactoryMind-Docker/README.md
+
 # FactoryMind
 
 An Industry 4.0 predictive maintenance pipeline that captures machine sensor telemetry, queues critical alerts, and performs automated root-cause analysis using local RAG and LLM inference.
