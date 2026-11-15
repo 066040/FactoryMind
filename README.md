@@ -12,14 +12,14 @@ An Industry 4.0 predictive maintenance pipeline that captures machine sensor tel
                             [ ChromaDB (RAG) ]                             [ Local Ollama / LLM ]
                          (Technician Notes Context)                         (Root Cause Analysis)
 
-1. Edge Sensor (C++): Collects telemetry (temperature, vibration, status) and sends critical JSON alarms.
-2. Message Broker (RabbitMQ): Queues messages reliably without data loss.
+1. Edge Sensor (C++, `sensor/main.cpp`): Simulates temperature and vibration for three machines, checks them against limits (90 °C, 7.1 mm/s RMS) with hysteresis, and publishes a JSON alarm over AMQP only when a limit is crossed.
+2. Message Broker (RabbitMQ): Buffers alarms between the edge and the AI worker, so neither side waits for the other.
 3. RAG Vector Search (ChromaDB): Matches incoming alarm telemetry with historical technician repair manuals.
 4. Local Brain (Ollama): Runs fully on-premise to diagnose root causes and recommend immediate mitigation steps.
 
 ## Tech Stack
 
-- C++ (AMQP Publisher)
+- C++17 + rabbitmq-c (AMQP publisher)
 - Python 3.11 (Consumer & RAG)
 - RabbitMQ (Docker)
 - ChromaDB (Local Vector DB)
@@ -31,11 +31,18 @@ An Industry 4.0 predictive maintenance pipeline that captures machine sensor tel
 1. Ensure Ollama is running on host with model:
    ollama pull qwen2.5:3b
 
-2. Start broker and AI consumer:
-   docker-compose up --build
+2. Start everything — broker, AI consumer and the C++ edge sensor:
+   docker compose up --build
 
-3. In another terminal, trigger the edge sensor:
-   ~/producer
+3. Watch the alarms and the AI's answers:
+   docker compose logs -f sensor consumer
+
+   RabbitMQ management UI: http://localhost:15672
+
+Run the sensor outside Docker (Linux / WSL):
+   sudo apt install g++ librabbitmq-dev
+   g++ -std=c++17 -O2 sensor/main.cpp -lrabbitmq -o sensor/sensor
+   ./sensor/sensor          # RABBIT_HOST, RABBIT_PORT, RABBIT_USER, RABBIT_PASS, SAMPLE_MS
 
 ## Example Output
 

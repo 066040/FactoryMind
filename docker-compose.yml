@@ -24,3 +24,17 @@ services:
           condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  sensor:
+    build: ./sensor
+    container_name: factorymind-sensor
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_USER=admin
+      - RABBIT_PASS=mercedes2026
+      - SAMPLE_MS=1000
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      consumer:
+        condition: service_started
