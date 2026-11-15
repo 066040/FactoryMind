@@ -59,11 +59,20 @@ def callback(ch, method, properties, body):
     # Önce sadece bu makineye ait notlarda ara; hiç yoksa tüm notlara düş.
     machine = data['sensor_id']
     try:
-        results = collection.query(query_texts=[alert_msg], n_results=2,
+        results = collection.query(query_texts=[alert_msg], n_results=4,
                                    where_document={"$contains": machine})
         docs = results['documents'][0]
     except Exception:
         docs = []
+    # Notları kodda süz: sadece sınırı aşılan ölçümden (sıcaklık / titreşim) bahsedenleri tut.
+    # Küçük model "bunu yok say" talimatına her zaman uymadığı için karar modele bırakılmıyor.
+    keys = []
+    if temp_state != "normal":
+        keys.append("sıcaklık")
+    if vib_state != "normal":
+        keys.append("titreşim")
+    relevant = [d for d in docs if any(k in d.lower() for k in keys)]
+    docs = (relevant or docs)[:2]
     if not docs:
         docs = collection.query(query_texts=[alert_msg], n_results=2)['documents'][0]
     context = "\n".join(docs)
