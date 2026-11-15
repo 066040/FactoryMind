@@ -53,8 +53,17 @@ def callback(ch, method, properties, body):
         parts.append(f"titreşim {vib} mm/s'ye çıktı (sıcaklık {data['temperature']}°C)")
     alert_msg = f"{data['sensor_id']} makinesinde " + " ve ".join(parts) + "."
     
-    results = collection.query(query_texts=[alert_msg], n_results=2)
-    context = "\n".join(results['documents'][0])
+    # Önce sadece bu makineye ait notlarda ara; hiç yoksa tüm notlara düş.
+    machine = data['sensor_id']
+    try:
+        results = collection.query(query_texts=[alert_msg], n_results=2,
+                                   where_document={"$contains": machine})
+        docs = results['documents'][0]
+    except Exception:
+        docs = []
+    if not docs:
+        docs = collection.query(query_texts=[alert_msg], n_results=2)['documents'][0]
+    context = "\n".join(docs)
     
     print(f"\n📚 [BULUNAN NOTLAR]:\n{context}\n")
     print("🤖 [AI] Notları okuyup analiz ediyor...")
@@ -66,6 +75,8 @@ def callback(ch, method, properties, body):
     {context}
     
     ALARM: {alert_msg}
+    
+    Sadece {machine} makinesi hakkında konuş; başka makinenin adını kullanma.
     
     Kök nedeni ve yapılması gerekeni 2 cümle ile yaz."""
     
