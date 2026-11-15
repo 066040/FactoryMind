@@ -46,12 +46,15 @@ def callback(ch, method, properties, body):
     print(f"\n🔔 [SENSOR] Alarm: {data['sensor_id']} - {data['status']} ({reason})")
     print(f"   Sıcaklık: {data['temperature']}°C" + (f" · Titreşim: {vib} mm/s" if vib is not None else ""))
     
-    parts = []
-    if 'temperature' in reason:
-        parts.append(f"sıcaklık {data['temperature']}°C'ye ulaştı")
-    if 'vibration' in reason and vib is not None:
-        parts.append(f"titreşim {vib} mm/s'ye çıktı (sıcaklık {data['temperature']}°C)")
-    alert_msg = f"{data['sensor_id']} makinesinde " + " ve ".join(parts) + "."
+    TEMP_LIMIT, VIB_LIMIT = 90.0, 7.1
+    temp = float(data['temperature'])
+    vib_v = float(vib) if vib is not None else None
+    temp_state = "SINIR AŞILDI" if temp >= TEMP_LIMIT else "normal"
+    vib_state = ("SINIR AŞILDI" if vib_v is not None and vib_v >= VIB_LIMIT else "normal")
+    readings = f"sıcaklık {temp}°C (sınır {TEMP_LIMIT}°C, {temp_state})"
+    if vib_v is not None:
+        readings += f", titreşim {vib_v} mm/s (sınır {VIB_LIMIT} mm/s, {vib_state})"
+    alert_msg = f"{data['sensor_id']} makinesinde alarm: {readings}."
     
     # Önce sadece bu makineye ait notlarda ara; hiç yoksa tüm notlara düş.
     machine = data['sensor_id']
@@ -77,6 +80,7 @@ def callback(ch, method, properties, body):
     ALARM: {alert_msg}
     
     Sadece {machine} makinesi hakkında konuş; başka makinenin adını kullanma.
+    Sadece "SINIR AŞILDI" olan ölçümle ilgili notları kullan; "normal" olan ölçümle ilgili notları yok say.
     
     Kök nedeni ve yapılması gerekeni 2 cümle ile yaz."""
     
